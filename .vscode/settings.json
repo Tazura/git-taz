@@ -11,8 +11,10 @@
     
     // Terminal configuration
     "terminal.integrated.env.linux": {
-        "UV_PROJECT_ENVIRONMENT": ".venv"
+        "UV_PROJECT_ENVIRONMENT": ".venv",
+        "PATH": "${env:PATH}:${env:HOME}/.local/bin"
     },
+    "terminal.integrated.shellArgs.linux": ["-l"],
     
     // Python linting and formatting
     "python.linting.enabled": true,
