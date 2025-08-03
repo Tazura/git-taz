@@ -43,10 +43,12 @@ def main() -> None:
     args = parse_arguments()
 
     # Default behavior is to launch UI mode
-    # Only run command-line mode if --no-ui is specified or commands are given
+    # Pass repository path to UI if specified
+    repo_path = args.repo if args.repo != "." else None
+
     from .ui import run_ui
 
-    run_ui()
+    run_ui(repo_path)
     return
 
 

@@ -37,7 +37,7 @@ locale.setlocale = _patched_setlocale
 from .app import GitTazApp  # noqa: E402
 
 
-def run_ui() -> None:
+def run_ui(repo_path: Optional[str] = None) -> None:
     """Run the npyscreen UI."""
     # Fix locale issues that can occur in some environments
     try:
@@ -54,6 +54,19 @@ def run_ui() -> None:
 
     try:
         app = GitTazApp()
+
+        # If a specific repo path was provided, try to set it
+        if repo_path:
+            from ..models import GitRepository
+
+            try:
+                repo = GitRepository.from_path(repo_path)
+                if repo.exists and repo.is_git:
+                    app.repository = repo
+            except Exception:
+                # If there's any error, just continue with default behavior
+                pass
+
         app.run()
     except KeyboardInterrupt:
         pass  # Clean exit on Ctrl+C

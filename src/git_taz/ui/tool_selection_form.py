@@ -41,7 +41,7 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
         self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
         self.status_bar = self.add(
             npyscreen.FixedText,
-            value="CTRL-H: Help | CTRL-X/CTRL-C: Exit | CTRL-R: Select Repo",
+            value="F2: Commands | CTRL-H: Help | CTRL-X/CTRL-C: Exit",
             editable=False,
         )
 
@@ -62,8 +62,8 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
                 24: self._exit_app,  # CTRL-X
                 # ord("^C"): self._exit_app,  # CTRL-C
                 3: self._exit_app,  # CTRL-C
-                # ord("^R"): self._select_repo,  # CTRL-R
-                18: self._select_repo,  # CTRL-R
+                # CTRL-A for command selection
+                1: self._show_commands,  # CTRL-A
             }
         )
 
@@ -77,6 +77,12 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
         self.parentApp.setNextForm("REPO_SELECT")
         self.parentApp.switchFormNow()
 
+    def _show_commands(self, input) -> None:
+        """Show command selection dialog."""
+        self.parentApp.previous_form = "MAIN"
+        self.parentApp.setNextForm("COMMAND_SELECT")
+        self.parentApp.switchFormNow()
+
     def _show_help(self, input=None) -> None:
         """Show help dialog."""
         help_text = [
@@ -88,9 +94,9 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
             "- Enter/Space: Select a tool to execute",
             "",
             "Keyboard Shortcuts:",
+            "- F2: Show command selection",
             "- CTRL-H: Show this help",
             "- CTRL-X or CTRL-C: Exit application",
-            "- CTRL-R: Return to repository selection",
             "",
             "Tool Categories:",
             "- Information: Get repository status and information",
@@ -125,6 +131,14 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
             self._load_tools()
         else:
             self.repo_info.value = "No repository selected"
+            # Clear tools if no repository
+            self.tool_list.values = [
+                "No repository selected.",
+                "Press F2 to select a command or repository.",
+            ]
+            self.output_area.values = [
+                "Select a repository first to see available tools."
+            ]
 
     def _load_tools(self) -> None:
         """Load tools organized by category."""
