@@ -5,7 +5,7 @@
             "label": "uv: Install dependencies",
             "type": "shell",
             "command": "uv",
-            "args": ["sync"],
+            "args": ["sync", "--extra", "dev"],
             "group": "build",
             "presentation": {
                 "echo": true,
