@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "A Git utility package"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["npyscreen>=1.6.0"]
+dependencies = [
+    "gitpython>=3.1.45",
+    "npyscreen>=1.6.0",
+]
 
 [project.optional-dependencies]
 dev = [
