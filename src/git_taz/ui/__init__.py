@@ -58,6 +58,21 @@ class RepositorySelectForm(npyscreen.ActionForm):
             values=["Enter a repository path above and press OK to validate."],
         )
 
+    def set_up_handlers(self):
+        """Set up keyboard handlers."""
+        super().set_up_handlers()
+        # Add CTRL-C handler for exit
+        self.handlers.update(
+            {
+                3: self._exit_app,  # CTRL-C
+            }
+        )
+
+    def _exit_app(self, input):
+        """Exit the application."""
+        self.parentApp.setNextForm(None)
+        self.parentApp.switchFormNow()
+
     def on_ok(self):
         """Handle OK button press."""
         repo_path = self.repo_path.value
@@ -102,20 +117,100 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
 
         self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
 
-        # Tool categories - reduce max_height to leave space for output
+        # Tool categories - leave space for output and status bar
         self.tool_list = self.add(
-            npyscreen.MultiLineAction, name="Available Tools:", values=[], max_height=10
+            npyscreen.MultiLineAction, name="Available Tools:", values=[], max_height=8
         )
         self.tool_list.actionHighlighted = self.tool_selected
 
-        # Output area - reduce max_height
+        # Output area - reduce max_height to leave space for status bar
         self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
         self.output_area = self.add(
             npyscreen.Pager,
             name="Output:",
-            max_height=6,
+            max_height=5,
             values=["Select a tool above to see its output here."],
         )
+
+        # Status bar at the bottom
+        self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
+        self.status_bar = self.add(
+            npyscreen.FixedText,
+            value="CTRL-H: Help | CTRL-X/CTRL-C: Exit | CTRL-R: Select Repo",
+            editable=False,
+        )
+
+    def while_waiting(self):
+        """Handle keyboard shortcuts while waiting for input."""
+        # This method is called when the form is waiting for input
+        pass
+
+    def set_up_handlers(self):
+        """Set up keyboard handlers."""
+        super().set_up_handlers()
+        # Add custom key handlers
+        self.handlers.update(
+            {
+                # ord("^H"): self._show_help,  # CTRL-H
+                8: self._show_help,  # CTRL-H (backspace)
+                # ord("^X"): self._exit_app,  # CTRL-X
+                24: self._exit_app,  # CTRL-X
+                # ord("^C"): self._exit_app,  # CTRL-C
+                3: self._exit_app,  # CTRL-C
+                # ord("^R"): self._select_repo,  # CTRL-R
+                18: self._select_repo,  # CTRL-R
+            }
+        )
+
+    def _exit_app(self, input):
+        """Exit the application."""
+        self.parentApp.setNextForm(None)
+        self.parentApp.switchFormNow()
+
+    def _select_repo(self, input):
+        """Switch to repository selection."""
+        self.parentApp.setNextForm("REPO_SELECT")
+        self.parentApp.switchFormNow()
+
+    def _show_help(self, input=None):
+        """Show help dialog."""
+        help_text = [
+            "Git-Taz Help",
+            "=============",
+            "",
+            "Navigation:",
+            "- Use arrow keys or Tab/Shift+Tab to move between widgets",
+            "- Enter/Space: Select a tool to execute",
+            "",
+            "Keyboard Shortcuts:",
+            "- CTRL-H: Show this help",
+            "- CTRL-X or CTRL-C: Exit application",
+            "- CTRL-R: Return to repository selection",
+            "",
+            "Tool Categories:",
+            "- Information: Get repository status and information",
+            "- Maintenance: Perform repository maintenance tasks",
+            "",
+            "Press any key to continue...",
+        ]
+
+        # Create a simple form for help display
+        help_form = npyscreen.ActionPopup(
+            name="Help",
+            lines=20,
+            columns=60,
+        )
+        help_form.preserve_selected_widget = True
+
+        # Add a multiline widget to display help text
+        help_form.add(
+            npyscreen.Pager,
+            values=help_text,
+            max_height=-2,
+        )
+
+        # Show the form
+        help_form.edit()
 
     def beforeEditing(self):
         """Called before the form is displayed."""
@@ -207,6 +302,22 @@ class GitTazApp(npyscreen.NPSAppManaged):
         """Initialize the application."""
         self.addForm("REPO_SELECT", RepositorySelectForm)
         self.addForm("MAIN", ToolSelectionForm)
+        # Start with repository selection form
+        self.setNextForm("REPO_SELECT")
+
+    def onInMainLoop(self):
+        """Called during main loop - handle global shortcuts."""
+        # This allows us to handle CTRL-C at the application level
+        pass
+
+    def while_waiting(self):
+        """Handle global keyboard shortcuts."""
+        # Handle CTRL-C globally
+        try:
+            # This will be called periodically
+            pass
+        except KeyboardInterrupt:
+            self.setNextForm(None)
 
 
 def run_ui() -> None:
