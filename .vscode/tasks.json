@@ -5,7 +5,11 @@
             "label": "uv: Install dependencies",
             "type": "shell",
             "command": "uv",
-            "args": ["sync", "--extra", "dev"],
+            "args": [
+                "sync",
+                "--extra",
+                "dev"
+            ],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -36,7 +40,12 @@
             "label": "uv: Run main",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "python", "-m", "src.git_taz.core"],
+            "args": [
+                "run",
+                "python",
+                "-m",
+                "src.git_taz.core"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -53,7 +62,10 @@
             "label": "uv: Run tests",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "pytest"],
+            "args": [
+                "run",
+                "pytest"
+            ],
             "group": "test",
             "presentation": {
                 "echo": true,
@@ -67,7 +79,11 @@
             "label": "uv: Format code",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "black", "."],
+            "args": [
+                "run",
+                "black",
+                "."
+            ],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -81,7 +97,11 @@
             "label": "uv: Lint code",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "flake8", "."],
+            "args": [
+                "run",
+                "flake8",
+                "."
+            ],
             "group": "test",
             "presentation": {
                 "echo": true,
@@ -108,7 +128,11 @@
             "label": "uv: Type check",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "mypy", "."],
+            "args": [
+                "run",
+                "mypy",
+                "src"
+            ],
             "group": "test",
             "presentation": {
                 "echo": true,
