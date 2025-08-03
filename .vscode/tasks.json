@@ -1,0 +1,142 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "uv: Install dependencies",
+            "type": "shell",
+            "command": "uv",
+            "args": ["sync"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: Add dependency",
+            "type": "shell",
+            "command": "uv",
+            "args": [
+                "add",
+                "${input:packageName}"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: Run main",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "python", "main.py"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: Run tests",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "pytest"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: Format code",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "black", "."],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "uv: Lint code",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "flake8", "."],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [
+                {
+                    "owner": "flake8",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+)\\s+(.+)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ]
+        },
+        {
+            "label": "uv: Type check",
+            "type": "shell",
+            "command": "uv",
+            "args": ["run", "mypy", "."],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [
+                {
+                    "owner": "mypy",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^(.+):(\\d+):\\s+(\\w+):\\s+(.+)$",
+                        "file": 1,
+                        "line": 2,
+                        "severity": 3,
+                        "message": 4
+                    }
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "packageName",
+            "description": "Package name to add",
+            "default": "",
+            "type": "promptString"
+        }
+    ]
+}

@@ -1,0 +1,77 @@
+{
+    // Python configuration for uv projects
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    
+    // Use uv for package management
+    "python.poetryPath": "uv",
+    "python.condaPath": "",
+    "python.pipenvPath": "",
+    
+    // Terminal configuration
+    "terminal.integrated.env.linux": {
+        "UV_PROJECT_ENVIRONMENT": ".venv"
+    },
+    
+    // Python linting and formatting
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackPath": "uv run black",
+    "python.linting.flake8Path": "uv run flake8",
+    
+    // Editor settings
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    
+    // Python-specific editor settings
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.trimAutoWhitespace": true
+    },
+    
+    // File associations
+    "files.associations": {
+        "pyproject.toml": "toml",
+        "uv.lock": "toml"
+    },
+    
+    // Exclude patterns for file explorer
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.pytest_cache": true,
+        "**/.mypy_cache": true,
+        "**/.coverage": true,
+        "**/htmlcov": true
+    },
+    
+    // Search exclude patterns
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.venv": true,
+        "**/node_modules": true
+    },
+    
+    // Testing configuration
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": "uv run pytest",
+    "python.testing.unittestEnabled": false,
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    
+    // IntelliSense and type checking
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.indexing": true,
+    
+    // Jupyter notebook settings (if needed)
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
+    "jupyter.interactiveWindow.textEditor.executeSelection": true
+}
