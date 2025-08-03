@@ -46,9 +46,14 @@ def get_repository_info(repo_path: str) -> dict:
         Dictionary containing repository information.
     """
     repo = Path(repo_path)
+    repo_absolute = repo.absolute()
+
+    # Handle current directory case where name might be empty
+    repo_name = repo_absolute.name
+
     return {
-        "path": str(repo.absolute()),
-        "name": repo.name,
+        "path": str(repo_absolute),
+        "name": repo_name,
         "exists": repo.exists(),
         "is_git": validate_git_repository(repo_path),
     }
