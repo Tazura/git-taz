@@ -36,7 +36,7 @@
             "label": "uv: Run main",
             "type": "shell",
             "command": "uv",
-            "args": ["run", "python", "main.py"],
+            "args": ["run", "python", "-m", "src.git_taz.core"],
             "group": {
                 "kind": "build",
                 "isDefault": true
