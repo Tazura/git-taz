@@ -1,7 +1,6 @@
 """Main module for git-taz functionality."""
 
 import argparse
-from pathlib import Path
 
 
 def parse_arguments() -> argparse.Namespace:
