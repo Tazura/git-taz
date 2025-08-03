@@ -102,27 +102,29 @@ class ToolSelectionForm(npyscreen.ActionFormMinimal):
 
         self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
 
-        # Tool categories
+        # Tool categories - reduce max_height to leave space for output
         self.tool_list = self.add(
-            npyscreen.MultiLineAction, name="Available Tools:", values=[], max_height=15
+            npyscreen.MultiLineAction, name="Available Tools:", values=[], max_height=10
         )
         self.tool_list.actionHighlighted = self.tool_selected
 
-        # Output area
+        # Output area - reduce max_height
         self.add(npyscreen.FixedText, value="", editable=False)  # Spacer
         self.output_area = self.add(
             npyscreen.Pager,
             name="Output:",
-            max_height=10,
+            max_height=6,
             values=["Select a tool above to see its output here."],
         )
 
     def beforeEditing(self):
         """Called before the form is displayed."""
-        if hasattr(self.parentApp, "repository"):
+        if hasattr(self.parentApp, "repository") and self.parentApp.repository:
             repo = self.parentApp.repository
             self.repo_info.value = f"{repo.name} ({repo.absolute_path})"
             self._load_tools()
+        else:
+            self.repo_info.value = "No repository selected"
 
     def _load_tools(self):
         """Load tools organized by category."""
