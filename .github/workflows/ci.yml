@@ -110,3 +110,10 @@ jobs:
       with:
         name: dist
         path: dist/
+        
+  all:
+    runs-on: ubuntu-latest
+    needs: [test, lint, security, build]
+    steps:
+    - name: All checks passed
+      run: echo "All checks completed successfully."
