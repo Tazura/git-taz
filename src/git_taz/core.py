@@ -1,9 +1,7 @@
 """Main module for git-taz functionality."""
 
 import argparse
-import os
 from pathlib import Path
-from typing import Optional
 
 
 def greet(name: str = "git-taz") -> str:
@@ -73,6 +71,7 @@ Examples:
   %(prog)s --repo /path/to/repo    Process specific repository
   %(prog)s -r .                    Process current directory
   %(prog)s                         Process current directory (default)
+  %(prog)s --ui                    Launch interactive UI mode
         """,
     )
 
@@ -88,12 +87,21 @@ Examples:
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
 
+    parser.add_argument("--ui", action="store_true", help="Launch interactive UI mode")
+
     return parser.parse_args()
 
 
 def main() -> None:
     """Main entry point for the application."""
     args = parse_arguments()
+
+    # Launch UI mode if requested
+    if args.ui:
+        from .ui import run_ui
+
+        run_ui()
+        return
 
     # Get repository path from arguments
     repo_path = args.repo

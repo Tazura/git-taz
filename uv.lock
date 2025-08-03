@@ -67,6 +67,7 @@ dev = [
     { name = "black" },
     { name = "flake8" },
     { name = "mypy" },
+    { name = "npyscreen" },
     { name = "pytest" },
 ]
 
@@ -75,6 +76,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
     { name = "flake8", marker = "extra == 'dev'" },
     { name = "mypy", marker = "extra == 'dev'" },
+    { name = "npyscreen", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
 ]
 provides-extras = ["dev"]
@@ -131,6 +133,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
 ]
+
+[[package]]
+name = "npyscreen"
+version = "4.10.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/48/91b8321280f17d135918895b57f891f727be84a88f62fc62485a7039de00/npyscreen-4.10.5.tar.gz", hash = "sha256:622ee0f9a5dae946e635b7c6e0f6d65e1ed3c9ea0d20b89dab7f58d580e5126e", size = 94949, upload-time = "2015-10-12T09:08:22.152Z" }
 
 [[package]]
 name = "packaging"

@@ -16,6 +16,7 @@ dev = [
     "flake8",
     "mypy",
     "pytest",
+    "npyscreen",
 ]
 
 [project.scripts]
