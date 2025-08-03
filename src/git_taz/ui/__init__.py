@@ -12,9 +12,7 @@ os.environ.setdefault("LC_ALL", "C.UTF-8")
 _original_setlocale = locale.setlocale
 
 
-def _patched_setlocale(
-    category: int, locale_name: Optional[str] = None
-) -> str:
+def _patched_setlocale(category: int, locale_name: Optional[str] = None) -> str:
     """Patched setlocale that falls back to C locale on errors."""
     try:
         if locale_name == "":
