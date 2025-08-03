@@ -68,10 +68,10 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --repo /path/to/repo    Process specific repository
-  %(prog)s -r .                    Process current directory
-  %(prog)s                         Process current directory (default)
-  %(prog)s --ui                    Launch interactive UI mode
+  %(prog)s                         Launch interactive UI mode (default)
+  %(prog)s --repo /path/to/repo    Launch UI with specific repository
+  %(prog)s -r .                    Launch UI for current directory
+  %(prog)s --no-ui                 Disable UI mode (for future CLI commands)
         """,
     )
 
@@ -87,7 +87,14 @@ Examples:
         "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
 
-    parser.add_argument("--ui", action="store_true", help="Launch interactive UI mode")
+    parser.add_argument(
+        "--no-ui",
+        action="store_true",
+        help="Disable UI mode and run in command-line mode",
+    )
+
+    # Future: Add command subparsers here for specific git operations
+    # parser.add_subparsers(dest='command', help='Available commands')
 
     return parser.parse_args()
 
@@ -96,13 +103,15 @@ def main() -> None:
     """Main entry point for the application."""
     args = parse_arguments()
 
-    # Launch UI mode if requested
-    if args.ui:
+    # Default behavior is to launch UI mode
+    # Only run command-line mode if --no-ui is specified or commands are given
+    if not args.no_ui:
         from .ui import run_ui
 
         run_ui()
         return
 
+    # Command-line mode (currently minimal functionality)
     # Get repository path from arguments
     repo_path = args.repo
 
@@ -123,6 +132,7 @@ def main() -> None:
     # Main functionality
     message = greet(f"git-taz processing {repo_info['name']}")
     print(message)
+    print("Note: Use without --no-ui flag to launch interactive mode")
 
 
 if __name__ == "__main__":
