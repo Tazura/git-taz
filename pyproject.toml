@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A Git utility package"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = ["npyscreen>=1.6.0"]
 
 [project.optional-dependencies]
 dev = [
@@ -16,7 +16,10 @@ dev = [
     "flake8",
     "mypy",
     "pytest",
-    "npyscreen",
+    "pytest-cov",   # For coverage reporting
+    "safety",       # Security vulnerability scanning
+    "bandit[toml]", # Security linting
+    "pre-commit",   # Pre-commit hooks
 ]
 
 [project.scripts]
@@ -27,11 +30,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "-v"
-]
+addopts = ["--strict-markers", "--strict-config", "-v"]
 
 [tool.black]
 line-length = 88
@@ -68,12 +67,8 @@ strict_equality = true
 [tool.flake8]
 max-line-length = 88
 extend-ignore = ["E203", "W503"]
-exclude = [
-    ".git",
-    "__pycache__",
-    ".venv",
-    ".eggs",
-    "*.egg",
-    "dist",
-    "build",
-]
+exclude = [".git", "__pycache__", ".venv", ".eggs", "*.egg", "dist", "build"]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]                  # Skip assert_used test
