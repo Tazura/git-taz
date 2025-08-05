@@ -352,11 +352,13 @@ class GitTazApp(App):
                     ],
                     prompt="Select type",
                     id="type_select",
+                    value="branches",
                 ),
                 Select([], prompt="Select branch/tag", id="target_select"),
                 Horizontal(
                     Button("Checkout", id="checkout_button", variant="primary"),
                     Button("Cancel", id="cancel_button", variant="default"),
+                    classes="centered-buttons",
                 ),
                 classes="checkout-dialog",
             )
