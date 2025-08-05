@@ -6,8 +6,9 @@ from typing import Optional
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal
-from textual.widgets import Button, DirectoryTree, Footer, Header, Log, Static
+from textual.containers import Container
+from textual.widgets import DirectoryTree, Footer, Header, Log, OptionList, Static
+from textual.widgets.option_list import Option
 
 from ..models import GitRepository
 from ..tools import GitToolsManager
@@ -31,33 +32,31 @@ class GitTazApp(App):
     }
     
     #sidebar {
-        width: 30%;
+        width: 25%;
         dock: left;
         border: solid $primary;
     }
     
     #main {
-        width: 70%;
-        margin: 1;
+        width: 75%;
+        layout: vertical;
     }
     
-    #repo_info {
-        height: 4;
-        border: solid $secondary;
-    }
-    
-    #tools {
-        height: 8;
+    #tools_menu {
+        height: 12;
         border: solid $accent;
+        margin: 1 0;
     }
     
     #output {
         border: solid $success;
+        margin: 1 0;
     }
     
-    .tool_button {
-        margin: 1;
-        min-width: 15;
+    #repo_status {
+        height: 3;
+        border: solid $secondary;
+        margin: 1 0;
     }
     """
 
@@ -74,26 +73,27 @@ class GitTazApp(App):
         yield Header()
 
         with Container(id="sidebar"):
-            yield Static("Repository Browser", id="browser_title")
+            yield Static("📁 Repository Browser", id="browser_title")
             yield DirectoryTree(str(self.repo_path), id="repo_tree")
 
-        with Container(id="main"):
-            with Container(id="repo_info"):
-                yield Static("Repository Information", id="repo_title")
+            with Container(id="repo_status"):
+                yield Static("📍 Repository", id="repo_title")
                 yield Static("Loading...", id="repo_details")
 
-            with Container(id="tools"):
-                yield Static("Git Tools", id="tools_title")
-                with Horizontal():
-                    yield Button("Status", id="btn_status", classes="tool_button")
-                    yield Button("Log", id="btn_log", classes="tool_button")
-                    yield Button("Diff", id="btn_diff", classes="tool_button")
-                with Horizontal():
-                    yield Button("Branches", id="btn_branches", classes="tool_button")
-                    yield Button("Remotes", id="btn_remotes", classes="tool_button")
+        with Container(id="main"):
+            with Container(id="tools_menu"):
+                yield Static("🛠️  Git Tools", id="tools_title")
+                yield OptionList(
+                    Option("📊 Status", id="status"),
+                    Option("📜 Log (Commits)", id="log"),
+                    Option("🔍 Diff", id="diff"),
+                    Option("🌳 Branches", id="branches"),
+                    Option("🔗 Remotes", id="remotes"),
+                    id="git_tools",
+                )
 
             with Container(id="output"):
-                yield Static("Output", id="output_title")
+                yield Static("📄 Output", id="output_title")
                 yield Log(id="command_log")
 
         yield Footer()
@@ -114,16 +114,12 @@ class GitTazApp(App):
     def update_repo_info(self) -> None:
         """Update the repository information display."""
         if self.repository and self.tools_manager:
+            repo_name = self.repository.name
+            git_status = "✅" if self.repository.is_git else "❌"
+
             info_text = Text()
-            info_text.append(f"Path: {self.repository.path}\n", style="cyan")
-            info_text.append(f"Name: {self.repository.name}\n", style="green")
-            info_text.append(
-                f"Git Repo: {'Yes' if self.repository.is_git else 'No'}\n",
-                style="yellow",
-            )
-            info_text.append(
-                f"Exists: {'Yes' if self.repository.exists else 'No'}", style="blue"
-            )
+            info_text.append(f"{repo_name} {git_status}\n", style="bold cyan")
+            info_text.append(f"{self.repository.path}", style="dim")
 
             self.query_one("#repo_details", Static).update(info_text)
 
@@ -166,16 +162,29 @@ class GitTazApp(App):
         self.log_message(f"Running {tool_name}...", "info")
 
         try:
-            # Map button IDs to tool methods with proper typing
-            if tool_name == "btn_status":
+            # Map option IDs to tool methods with proper typing
+            if tool_name == "status":
                 result = self.tools_manager.git_status()
-            elif tool_name == "btn_log":
-                result = self.tools_manager.git_log()
-            elif tool_name == "btn_diff":
+            elif tool_name == "log":
+                # Use custom git log format for better commit display
+                result = self.tools_manager.run_git_command(
+                    [
+                        "git",
+                        "log",
+                        "-n",
+                        "15",
+                        "--color",
+                        "--graph",
+                        "--abbrev-commit",
+                        "--date=short",
+                        "--pretty=format:%Cgreen%cd%Creset %C(bold blue)%<(22,trunc)%an%Creset %C(nobold red)%h%Creset %<(120,trunc)%s%C(bold yellow)%d%Creset%C(nobold nodim)",
+                    ]
+                )
+            elif tool_name == "diff":
                 result = self.tools_manager.git_diff()
-            elif tool_name == "btn_branches":
+            elif tool_name == "branches":
                 result = self.tools_manager.git_branches()
-            elif tool_name == "btn_remotes":
+            elif tool_name == "remotes":
                 result = self.tools_manager.git_remotes()
             else:
                 self.log_message(f"Unknown tool: {tool_name}", "error")
@@ -184,7 +193,14 @@ class GitTazApp(App):
             if result.success:
                 self.log_message(f"✓ {tool_name} completed", "success")
                 if result.output:
-                    self.log_message(result.output, "info")
+                    # For git log, display output line by line for better readability
+                    if tool_name == "log":
+                        self.log_message("📜 Recent Commits:", "info")
+                        for line in result.output.split("\n"):
+                            if line.strip():
+                                self.log_message(line, "info")
+                    else:
+                        self.log_message(result.output, "info")
             else:
                 self.log_message(f"✗ {tool_name} failed: {result.message}", "error")
                 if result.error:
@@ -193,12 +209,11 @@ class GitTazApp(App):
         except Exception as e:
             self.log_message(f"Error running {tool_name}: {e}", "error")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button press events."""
-        button_id = event.button.id
-        if button_id and button_id.startswith("btn_"):
-            # Create a task for the async method
-            self.run_worker(self.run_git_tool(button_id))
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        """Handle option selection from the tools menu."""
+        option_id = event.option.id
+        if option_id:
+            self.run_worker(self.run_git_tool(option_id))
 
     def on_directory_tree_file_selected(self, event) -> None:
         """Handle file selection in the directory tree."""
