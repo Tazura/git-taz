@@ -17,7 +17,7 @@ Examples:
   %(prog)s                              Launch interactive UI mode (default)
   %(prog)s --repo /path/to/repo         Launch UI with specific repository
   %(prog)s -r .                         Launch UI for current directory
-  
+
   %(prog)s checkout --interactive       Interactive branch/tag checkout
   %(prog)s checkout main                Checkout 'main' branch directly
   %(prog)s checkout --list-branches     List all branches
@@ -37,17 +37,22 @@ Examples:
     )
 
     # Add subcommands for CLI operations
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
     # Checkout subcommand
-    checkout_parser = subparsers.add_parser('checkout', help='Checkout branches/tags via CLI')
-    checkout_parser.add_argument('target', nargs='?', help='Branch or tag to checkout')
-    checkout_parser.add_argument('--interactive', '-i', action='store_true', 
-                                help='Interactive selection mode')
-    checkout_parser.add_argument('--list-branches', action='store_true', 
-                                help='List all branches')
-    checkout_parser.add_argument('--list-tags', action='store_true', 
-                                help='List all tags')
+    checkout_parser = subparsers.add_parser(
+        "checkout", help="Checkout branches/tags via CLI"
+    )
+    checkout_parser.add_argument("target", nargs="?", help="Branch or tag to checkout")
+    checkout_parser.add_argument(
+        "--interactive", "-i", action="store_true", help="Interactive selection mode"
+    )
+    checkout_parser.add_argument(
+        "--list-branches", action="store_true", help="List all branches"
+    )
+    checkout_parser.add_argument(
+        "--list-tags", action="store_true", help="List all tags"
+    )
 
     return parser.parse_args()
 
@@ -57,12 +62,12 @@ def main() -> None:
     args = parse_arguments()
 
     # Handle CLI commands
-    if args.command == 'checkout':
+    if args.command == "checkout":
         from .cli import CheckoutCLI
-        
+
         repo_path = args.repo if args.repo != "." else None
         cli = CheckoutCLI(repo_path)
-        
+
         if args.list_branches:
             cli.list_branches()
         elif args.list_tags:

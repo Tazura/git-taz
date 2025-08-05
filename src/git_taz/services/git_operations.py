@@ -1,7 +1,7 @@
 """Git operations service for git-taz."""
 
 from typing import List, Tuple, Optional
-from ..models import GitRepository
+from ..models import GitRepository, ToolResult
 from ..tools import GitToolsManager
 
 
@@ -63,18 +63,18 @@ class GitOperationsService:
         except Exception:
             return None
 
-    def get_status(self):
+    def get_status(self) -> ToolResult:
         """Get git status."""
         return self.tools_manager.git_status()
 
-    def get_log(self):
+    def get_log(self) -> ToolResult:
         """Get git log."""
         return self.tools_manager.git_log()
 
-    def get_branches_info(self):
+    def get_branches_info(self) -> ToolResult:
         """Get branches info."""
         return self.tools_manager.git_branches()
 
-    def get_diff(self):
+    def get_diff(self) -> ToolResult:
         """Get git diff."""
         return self.tools_manager.git_diff()
