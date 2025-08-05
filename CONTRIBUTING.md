@@ -71,12 +71,14 @@ uv run pytest --cov=src --cov-report=term-missing
 
 ## UI Development
 
-The application uses `npyscreen` for the terminal user interface:
+The application uses `Textual` with `Rich` for the terminal user interface:
 
-- Forms are in separate files under `src/git_taz/ui/`
-- Follow the existing patterns for keyboard shortcuts and navigation
+- The main app is in `src/git_taz/ui/app.py`
+- Follow Textual patterns for widgets, containers, and CSS styling
+- Use Rich for text formatting and styling within widgets
 - Test UI changes manually as automated UI testing is limited
 - Document any new keyboard shortcuts in help text and README
+- CSS styling follows Textual's CSS-like syntax for layout and theming
 
 ## Submitting Changes
 

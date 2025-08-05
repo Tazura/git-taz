@@ -9,7 +9,9 @@ description = "A Git utility package"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "gitpython>=3.1.45"
+    "gitpython>=3.1.45",
+    "textual>=0.82.0",
+    "rich>=13.0.0"
 ]
 
 [project.optional-dependencies]

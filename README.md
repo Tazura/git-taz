@@ -7,11 +7,12 @@ A Git utility tool with an interactive terminal user interface.
 
 ## Features
 
-- Interactive terminal UI using npyscreen
+- Interactive terminal UI using Textual and Rich
 - Repository selection and validation
 - Git tool selection and execution
 - Command-driven interface with keyboard shortcuts
 - Support for multiple git operations
+- Modern, responsive terminal interface
 
 ## Installation
 
