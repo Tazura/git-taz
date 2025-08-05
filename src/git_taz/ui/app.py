@@ -11,13 +11,17 @@ from textual.binding import Binding
 from textual.command import Hit, Hits, Provider
 from textual.containers import Container
 from textual.widgets import (
+    Button,
     DataTable,
     DirectoryTree,
     Footer,
     Header,
     Log,
+    Select,
     Static,
 )
+from textual.containers import Horizontal, Vertical
+from textual.screen import Screen
 
 from ..models import GitRepository
 from ..tools import GitToolsManager
@@ -72,6 +76,7 @@ class GitTazApp(App):
         Binding("ctrl+r", "refresh", "Refresh", show=True),
         Binding("ctrl+t", "toggle_sidebar", "Toggle Sidebar", show=True),
         Binding("ctrl+p", "command_palette", "Git Tools", show=True),
+        Binding("ctrl+b", "checkout", "Checkout Branch/Tag", show=True),
     ]
 
     # Add the custom Git tools provider to the command palette
@@ -110,6 +115,26 @@ class GitTazApp(App):
         color: $text;
         padding: 1;
         margin: 1 0;
+    }
+
+    .checkout-dialog {
+        align: center middle;
+        width: 50%;
+        height: 50%;
+        border: tall $primary;
+        background: $background;
+        padding: 2;
+    }
+
+    .checkout-dialog Select {
+        margin: 1;
+    }
+
+    .checkout-dialog .dialog-title {
+        text-align: center;
+        color: $primary;
+        dock: top;
+        border-bottom: tall $primary;
     }
     """
 
@@ -305,6 +330,85 @@ class GitTazApp(App):
     def _execute_git_tool(self, tool_name: str) -> None:
         """Execute a git tool from the command palette."""
         self.run_worker(self.run_git_tool(tool_name))
+
+    class CheckoutScreen(Screen):
+        """Screen for selecting branches/tags to checkout."""
+        
+        def __init__(self, repo, parent_app):
+            super().__init__()
+            self.repo = repo
+            self.parent_app = parent_app
+
+        def compose(self) -> ComposeResult:
+            yield Vertical(
+                Static("Checkout Branch/Tag", classes="dialog-title"),
+                Select(
+                    [
+                        ("Branches", "branches"),
+                        ("Tags", "tags"),
+                    ],
+                    prompt="Select type",
+                    id="type_select"
+                ),
+                Select(
+                    [],
+                    prompt="Select branch/tag",
+                    id="target_select"
+                ),
+                Horizontal(
+                    Button("Checkout", id="checkout_button", variant="primary"),
+                    Button("Cancel", id="cancel_button", variant="default")
+                ),
+                classes="checkout-dialog"
+            )
+
+        def on_mount(self) -> None:
+            self.update_targets("branches")
+
+        def on_select_changed(self, message: Select.Changed) -> None:
+            if message.select.id == "type_select":
+                if message.value:
+                    self.update_targets(str(message.value))
+
+        def update_targets(self, target_type: str) -> None:
+            target_select = self.query_one("#target_select", Select)
+            
+            if target_type == "branches":
+                branch_names = sorted(b.name for b in self.repo.repo.branches)
+                targets = [(name, name) for name in branch_names]
+            else:
+                tag_names = sorted(t.name for t in self.repo.repo.tags)
+                targets = [(name, name) for name in tag_names]
+            
+            target_select.set_options(targets)
+
+        def on_button_pressed(self, message: Button.Pressed) -> None:
+            if message.button.id == "checkout_button":
+                target_select = self.query_one("#target_select", Select)
+                selected_target = target_select.value
+                
+                if selected_target:
+                    try:
+                        self.repo.repo.git.checkout(selected_target)
+                        self.parent_app.log_message(f"Checked out {selected_target}", "success")
+                        self.parent_app.load_repository()  # Refresh the UI
+                        self.dismiss()
+                    except Exception as e:
+                        self.parent_app.log_message(f"Checkout failed: {e}", "error")
+                else:
+                    self.parent_app.log_message("No target selected", "warning")
+
+            elif message.button.id == "cancel_button":
+                self.dismiss()
+
+    def action_checkout(self) -> None:
+        """Open a dialog to checkout a branch or tag."""
+        if not self.repository or not self.repository.repo:
+            self.log_message("No repository loaded", "error")
+            return
+
+        checkout_screen = self.CheckoutScreen(self.repository, self)
+        self.push_screen(checkout_screen)
 
     def on_directory_tree_file_selected(self, event) -> None:
         """Handle file selection in the directory tree."""
