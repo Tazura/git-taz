@@ -4,12 +4,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.command import Hit, Hits, Provider
-from textual.containers import Container
+from textual.containers import Container, Horizontal, Vertical
+from textual.screen import Screen
 from textual.widgets import (
     Button,
     DataTable,
@@ -20,10 +20,9 @@ from textual.widgets import (
     Select,
     Static,
 )
-from textual.containers import Horizontal, Vertical
-from textual.screen import Screen
 
 from ..models import GitRepository
+from ..services import GitOperationsService
 from ..tools import GitToolsManager
 
 
@@ -50,11 +49,14 @@ class GitToolsProvider(Provider):
             command = f"git {tool_id}"
             score = matcher.match(command)
             if score > 0:
+
                 def make_tool_runner(tool: str):
                     def run_tool():
                         from typing import cast
+
                         app = cast("GitTazApp", self.app)
                         app._execute_git_tool(tool)
+
                     return run_tool
 
                 yield Hit(
@@ -75,7 +77,6 @@ class GitTazApp(App):
         Binding("ctrl+c,ctrl+q", "quit", "Quit", show=True),
         Binding("ctrl+r", "refresh", "Refresh", show=True),
         Binding("ctrl+t", "toggle_sidebar", "Toggle Sidebar", show=True),
-        Binding("ctrl+p", "command_palette", "Git Tools", show=True),
         Binding("ctrl+b", "checkout", "Checkout Branch/Tag", show=True),
     ]
 
@@ -144,6 +145,7 @@ class GitTazApp(App):
         self.repo_path = Path(repo_path) if repo_path else Path.cwd()
         self.repository: Optional[GitRepository] = None
         self.tools_manager: Optional[GitToolsManager] = None
+        self.git_operations: Optional[GitOperationsService] = None
         self.sidebar_visible = True
 
     def compose(self) -> ComposeResult:
@@ -183,6 +185,7 @@ class GitTazApp(App):
         try:
             self.repository = GitRepository.from_path(str(self.repo_path))
             self.tools_manager = GitToolsManager(self.repository)
+            self.git_operations = GitOperationsService(self.repository)
             self.update_repo_info()
             self.load_commits()
         except Exception as e:
@@ -290,7 +293,7 @@ class GitTazApp(App):
 
     async def run_git_tool(self, tool_name: str) -> None:
         """Run a Git tool and display the results."""
-        if not self.tools_manager:
+        if not self.git_operations:
             self.log_message("No repository loaded", "error")
             return
 
@@ -298,13 +301,13 @@ class GitTazApp(App):
 
         try:
             if tool_name == "status":
-                result = self.tools_manager.git_status()
+                result = self.git_operations.get_status()
             elif tool_name == "log":
-                result = self.tools_manager.git_log()
+                result = self.git_operations.get_log()
             elif tool_name == "branches":
-                result = self.tools_manager.git_branches()
+                result = self.git_operations.get_branches_info()
             elif tool_name == "diff":
-                result = self.tools_manager.git_diff()
+                result = self.git_operations.get_diff()
             else:
                 self.log_message(f"Unknown tool: {tool_name}", "error")
                 return
@@ -333,10 +336,10 @@ class GitTazApp(App):
 
     class CheckoutScreen(Screen):
         """Screen for selecting branches/tags to checkout."""
-        
-        def __init__(self, repo, parent_app):
+
+        def __init__(self, git_operations: GitOperationsService, parent_app):
             super().__init__()
-            self.repo = repo
+            self.git_operations = git_operations
             self.parent_app = parent_app
 
         def compose(self) -> ComposeResult:
@@ -348,18 +351,14 @@ class GitTazApp(App):
                         ("Tags", "tags"),
                     ],
                     prompt="Select type",
-                    id="type_select"
+                    id="type_select",
                 ),
-                Select(
-                    [],
-                    prompt="Select branch/tag",
-                    id="target_select"
-                ),
+                Select([], prompt="Select branch/tag", id="target_select"),
                 Horizontal(
                     Button("Checkout", id="checkout_button", variant="primary"),
-                    Button("Cancel", id="cancel_button", variant="default")
+                    Button("Cancel", id="cancel_button", variant="default"),
                 ),
-                classes="checkout-dialog"
+                classes="checkout-dialog",
             )
 
         def on_mount(self) -> None:
@@ -372,29 +371,22 @@ class GitTazApp(App):
 
         def update_targets(self, target_type: str) -> None:
             target_select = self.query_one("#target_select", Select)
-            
-            if target_type == "branches":
-                branch_names = sorted(b.name for b in self.repo.repo.branches)
-                targets = [(name, name) for name in branch_names]
-            else:
-                tag_names = sorted(t.name for t in self.repo.repo.tags)
-                targets = [(name, name) for name in tag_names]
-            
+            targets = self.git_operations.get_checkout_targets(target_type)
             target_select.set_options(targets)
 
         def on_button_pressed(self, message: Button.Pressed) -> None:
             if message.button.id == "checkout_button":
                 target_select = self.query_one("#target_select", Select)
                 selected_target = target_select.value
-                
+
                 if selected_target:
-                    try:
-                        self.repo.repo.git.checkout(selected_target)
-                        self.parent_app.log_message(f"Checked out {selected_target}", "success")
+                    result = self.git_operations.checkout(str(selected_target))
+                    if result.success:
+                        self.parent_app.log_message(result.message, "success")
                         self.parent_app.load_repository()  # Refresh the UI
                         self.dismiss()
-                    except Exception as e:
-                        self.parent_app.log_message(f"Checkout failed: {e}", "error")
+                    else:
+                        self.parent_app.log_message(result.message, "error")
                 else:
                     self.parent_app.log_message("No target selected", "warning")
 
@@ -403,11 +395,11 @@ class GitTazApp(App):
 
     def action_checkout(self) -> None:
         """Open a dialog to checkout a branch or tag."""
-        if not self.repository or not self.repository.repo:
+        if not self.git_operations:
             self.log_message("No repository loaded", "error")
             return
 
-        checkout_screen = self.CheckoutScreen(self.repository, self)
+        checkout_screen = self.CheckoutScreen(self.git_operations, self)
         self.push_screen(checkout_screen)
 
     def on_directory_tree_file_selected(self, event) -> None:
