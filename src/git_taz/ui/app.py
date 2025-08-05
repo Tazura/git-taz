@@ -147,15 +147,15 @@ class GitTazApp(App):
         """Log a message to the output log."""
         log_widget = self.query_one("#command_log", Log)
 
-        # Textual Log widget expects plain strings, we can add color via markup
+        # Use simple color prefixes for now since Log widget style parameter doesn't work
         if level == "error":
-            log_widget.write_line(f"[red]{message}[/red]")
+            log_widget.write_line(f"🔴 {message}")
         elif level == "success":
-            log_widget.write_line(f"[green]{message}[/green]")
+            log_widget.write_line(f"✅ {message}")
         elif level == "warning":
-            log_widget.write_line(f"[yellow]{message}[/yellow]")
+            log_widget.write_line(f"⚠️  {message}")
         else:
-            log_widget.write_line(message)
+            log_widget.write_line(f"ℹ️  {message}")
 
     async def run_git_tool(self, tool_name: str) -> None:
         """Run a Git tool and display the results."""
