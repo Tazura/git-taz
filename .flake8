@@ -8,4 +8,7 @@ exclude =
     .eggs,
     *.egg,
     dist,
-    build
+    build,
+    test-repo,
+    tests,
+    scripts
