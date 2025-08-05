@@ -107,9 +107,9 @@ class TestMainCLI:
     def test_main_checkout_list_branches(self, mock_checkout_cli):
         """Test main function with checkout list branches command."""
         mock_cli_instance = mock_checkout_cli.return_value
-        
+
         main()
-        
+
         mock_checkout_cli.assert_called_once_with(None)
         mock_cli_instance.list_branches.assert_called_once()
 
@@ -118,9 +118,9 @@ class TestMainCLI:
     def test_main_checkout_list_tags(self, mock_checkout_cli):
         """Test main function with checkout list tags command."""
         mock_cli_instance = mock_checkout_cli.return_value
-        
+
         main()
-        
+
         mock_checkout_cli.assert_called_once_with(None)
         mock_cli_instance.list_tags.assert_called_once()
 
@@ -129,9 +129,9 @@ class TestMainCLI:
     def test_main_checkout_interactive(self, mock_checkout_cli):
         """Test main function with checkout interactive command."""
         mock_cli_instance = mock_checkout_cli.return_value
-        
+
         main()
-        
+
         mock_checkout_cli.assert_called_once_with(None)
         mock_cli_instance.checkout_interactive.assert_called_once()
 
@@ -140,9 +140,9 @@ class TestMainCLI:
     def test_main_checkout_direct(self, mock_checkout_cli):
         """Test main function with direct checkout command."""
         mock_cli_instance = mock_checkout_cli.return_value
-        
+
         main()
-        
+
         mock_checkout_cli.assert_called_once_with(None)
         mock_cli_instance.checkout_direct.assert_called_once_with("main")
 
@@ -151,8 +151,8 @@ class TestMainCLI:
     def test_main_checkout_with_repo_path(self, mock_checkout_cli):
         """Test main function with checkout command and repo path."""
         mock_cli_instance = mock_checkout_cli.return_value
-        
+
         main()
-        
+
         mock_checkout_cli.assert_called_once_with("/path/to/repo")
         mock_cli_instance.checkout_interactive.assert_called_once()
