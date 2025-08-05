@@ -1,17 +1,64 @@
 """Main Textual application for git-taz."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
 
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.command import Hit, Hits, Provider
 from textual.containers import Container
-from textual.widgets import DirectoryTree, Footer, Header, Log, OptionList, Static
-from textual.widgets.option_list import Option
+from textual.widgets import (
+    DataTable,
+    DirectoryTree,
+    Footer,
+    Header,
+    Log,
+    Static,
+)
 
 from ..models import GitRepository
 from ..tools import GitToolsManager
+
+
+class GitToolsProvider(Provider):
+    """A command provider for Git tools."""
+
+    async def startup(self) -> None:
+        """Called once when the command palette is opened."""
+        pass
+
+    async def search(self, query: str) -> Hits:
+        """Search for Git tool commands."""
+        matcher = self.matcher(query)
+
+        # Define your Git tools
+        tools = [
+            ("status", "Show working tree status"),
+            ("log", "Show commit history"),
+            ("branches", "List branches"),
+            ("diff", "Show file differences"),
+        ]
+
+        for tool_id, description in tools:
+            command = f"git {tool_id}"
+            score = matcher.match(command)
+            if score > 0:
+                def make_tool_runner(tool: str):
+                    def run_tool():
+                        from typing import cast
+                        app = cast("GitTazApp", self.app)
+                        app._execute_git_tool(tool)
+                    return run_tool
+
+                yield Hit(
+                    score,
+                    matcher.highlight(command),
+                    make_tool_runner(tool_id),
+                    help=description,
+                )
 
 
 class GitTazApp(App):
@@ -24,38 +71,44 @@ class GitTazApp(App):
         Binding("ctrl+c,ctrl+q", "quit", "Quit", show=True),
         Binding("ctrl+r", "refresh", "Refresh", show=True),
         Binding("ctrl+t", "toggle_sidebar", "Toggle Sidebar", show=True),
+        Binding("ctrl+p", "command_palette", "Git Tools", show=True),
     ]
+
+    # Add the custom Git tools provider to the command palette
+    COMMANDS = App.COMMANDS | {GitToolsProvider}
 
     CSS = """
     Screen {
         layout: horizontal;
     }
-    
+
     #sidebar {
         width: 25%;
         dock: left;
         border: solid $primary;
     }
-    
+
     #main {
         width: 75%;
         layout: vertical;
     }
-    
-    #tools_menu {
-        height: 12;
-        border: solid $accent;
-        margin: 1 0;
-    }
-    
-    #output {
+
+    #commits_panel {
+        height: 70%;
         border: solid $success;
         margin: 1 0;
     }
-    
-    #repo_status {
-        height: 3;
-        border: solid $secondary;
+
+    #output_panel {
+        height: 30%;
+        border: solid $warning;
+        margin: 1 0;
+    }
+
+    .repo_info {
+        background: $primary 20%;
+        color: $text;
+        padding: 1;
         margin: 1 0;
     }
     """
@@ -73,34 +126,32 @@ class GitTazApp(App):
         yield Header()
 
         with Container(id="sidebar"):
-            yield Static("📁 Repository Browser", id="browser_title")
+            yield Static("Repository Info", classes="repo_info")
+            yield Static("Loading...", id="repo_details")
+            yield Static("Files", id="files_title")
             yield DirectoryTree(str(self.repo_path), id="repo_tree")
 
-            with Container(id="repo_status"):
-                yield Static("📍 Repository", id="repo_title")
-                yield Static("Loading...", id="repo_details")
-
         with Container(id="main"):
-            with Container(id="tools_menu"):
-                yield Static("🛠️  Git Tools", id="tools_title")
-                yield OptionList(
-                    Option("📊 Status", id="status"),
-                    Option("📜 Log (Commits)", id="log"),
-                    Option("🔍 Diff", id="diff"),
-                    Option("🌳 Branches", id="branches"),
-                    Option("🔗 Remotes", id="remotes"),
-                    id="git_tools",
-                )
+            with Container(id="commits_panel"):
+                yield Static("Commit History", id="commits_title")
+                yield DataTable(id="commits_table")
 
-            with Container(id="output"):
-                yield Static("📄 Output", id="output_title")
+            with Container(id="output_panel"):
+                yield Static("Output", id="output_title")
                 yield Log(id="command_log")
 
         yield Footer()
 
     def on_mount(self) -> None:
         """Called when app starts."""
+        self.setup_commits_table()
         self.load_repository()
+
+    def setup_commits_table(self) -> None:
+        """Setup the commits table with columns."""
+        table = self.query_one("#commits_table", DataTable)
+        table.add_columns("Date", "Author", "Hash", "Message", "Refs")
+        table.cursor_type = "row"
 
     def load_repository(self) -> None:
         """Load the Git repository."""
@@ -108,20 +159,78 @@ class GitTazApp(App):
             self.repository = GitRepository.from_path(str(self.repo_path))
             self.tools_manager = GitToolsManager(self.repository)
             self.update_repo_info()
+            self.load_commits()
         except Exception as e:
             self.query_one("#repo_details", Static).update(f"Error: {e}")
 
     def update_repo_info(self) -> None:
         """Update the repository information display."""
-        if self.repository and self.tools_manager:
-            repo_name = self.repository.name
-            git_status = "✅" if self.repository.is_git else "❌"
+        if self.repository and self.repository.repo:
+            try:
+                current_branch = self.repository.repo.active_branch.name
+                self.sub_title = f"Git Utility Tool - {current_branch}"
 
-            info_text = Text()
-            info_text.append(f"{repo_name} {git_status}\n", style="bold cyan")
-            info_text.append(f"{self.repository.path}", style="dim")
+                repo_text = Text()
+                repo_text.append(f"📁 {self.repository.name}\n", style="bold cyan")
+                repo_text.append(f"🌿 {current_branch}\n", style="green")
+                repo_text.append(f"📍 {self.repository.path}", style="dim")
 
-            self.query_one("#repo_details", Static).update(info_text)
+                self.query_one("#repo_details", Static).update(repo_text)
+            except Exception:
+                self.sub_title = "Git Utility Tool"
+                repo_text = Text()
+                repo_text.append(f"📁 {self.repository.name}\n", style="bold cyan")
+                repo_text.append("❌ No Git repo", style="red")
+                self.query_one("#repo_details", Static).update(repo_text)
+
+    def load_commits(self) -> None:
+        """Load commit history into the table."""
+        if not self.repository or not self.repository.repo:
+            return
+
+        table = self.query_one("#commits_table", DataTable)
+        table.clear()
+
+        try:
+            # Get commits using your preferred format
+            commits = list(self.repository.repo.iter_commits("HEAD", max_count=15))
+
+            for commit in commits:
+                # Format date
+                commit_date = datetime.fromtimestamp(commit.committed_date).strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+
+                # Format author (truncate to 22 chars)
+                author_name = commit.author.name or "Unknown"
+                author = author_name[:22] if len(author_name) > 22 else author_name
+
+                # Format hash (abbreviated)
+                short_hash = str(commit.hexsha)[:7]
+
+                # Format message (truncate to 80 chars)
+                commit_message = str(commit.message)
+                message_lines = commit_message.strip().split("\n")
+                message = message_lines[0] if message_lines else ""
+                if len(message) > 80:
+                    message = message[:77] + "..."
+
+                # Format refs (branches, tags)
+                refs = ""
+                try:
+                    refs_list = []
+                    for ref in self.repository.repo.refs:
+                        if ref.commit == commit:
+                            refs_list.append(ref.name.split("/")[-1])
+                    if refs_list:
+                        refs = f"({', '.join(refs_list)})"
+                except Exception:
+                    pass
+
+                table.add_row(commit_date, author, short_hash, message, refs)
+
+        except Exception as e:
+            self.log_message(f"Error loading commits: {e}", "error")
 
     def action_refresh(self) -> None:
         """Refresh the repository information."""
@@ -131,19 +240,20 @@ class GitTazApp(App):
     def action_toggle_sidebar(self) -> None:
         """Toggle the sidebar visibility."""
         sidebar = self.query_one("#sidebar")
+        main_panel = self.query_one("#main")
         if self.sidebar_visible:
             sidebar.styles.display = "none"
-            self.query_one("#main").styles.width = "100%"
+            main_panel.styles.width = "100%"
         else:
             sidebar.styles.display = "block"
-            self.query_one("#main").styles.width = "70%"
+            main_panel.styles.width = "75%"
         self.sidebar_visible = not self.sidebar_visible
 
     def log_message(self, message: str, level: str = "info") -> None:
         """Log a message to the output log."""
         log_widget = self.query_one("#command_log", Log)
 
-        # Use simple color prefixes for now since Log widget style parameter doesn't work
+        # Use emoji prefixes for visual distinction
         if level == "error":
             log_widget.write_line(f"🔴 {message}")
         elif level == "success":
@@ -159,65 +269,54 @@ class GitTazApp(App):
             self.log_message("No repository loaded", "error")
             return
 
-        self.log_message(f"Running {tool_name}...", "info")
+        self.log_message(f"Running git {tool_name}...", "info")
 
         try:
-            # Map option IDs to tool methods with proper typing
             if tool_name == "status":
                 result = self.tools_manager.git_status()
             elif tool_name == "log":
-                # Use custom git log format for better commit display
-                result = self.tools_manager.run_git_command(
-                    [
-                        "git",
-                        "log",
-                        "-n",
-                        "15",
-                        "--color",
-                        "--graph",
-                        "--abbrev-commit",
-                        "--date=short",
-                        "--pretty=format:%Cgreen%cd%Creset %C(bold blue)%<(22,trunc)%an%Creset %C(nobold red)%h%Creset %<(120,trunc)%s%C(bold yellow)%d%Creset%C(nobold nodim)",
-                    ]
-                )
-            elif tool_name == "diff":
-                result = self.tools_manager.git_diff()
+                result = self.tools_manager.git_log()
             elif tool_name == "branches":
                 result = self.tools_manager.git_branches()
-            elif tool_name == "remotes":
-                result = self.tools_manager.git_remotes()
+            elif tool_name == "diff":
+                result = self.tools_manager.git_diff()
             else:
                 self.log_message(f"Unknown tool: {tool_name}", "error")
                 return
 
             if result.success:
-                self.log_message(f"✓ {tool_name} completed", "success")
+                self.log_message(f"✓ git {tool_name} completed", "success")
                 if result.output:
-                    # For git log, display output line by line for better readability
-                    if tool_name == "log":
-                        self.log_message("📜 Recent Commits:", "info")
-                        for line in result.output.split("\n"):
-                            if line.strip():
-                                self.log_message(line, "info")
-                    else:
-                        self.log_message(result.output, "info")
+                    # Split long output into multiple lines
+                    lines = result.output.split("\n")
+                    for line in lines[:20]:  # Limit to first 20 lines
+                        if line.strip():
+                            self.log_message(line.strip(), "info")
+                    if len(lines) > 20:
+                        self.log_message(f"... ({len(lines) - 20} more lines)", "info")
             else:
-                self.log_message(f"✗ {tool_name} failed: {result.message}", "error")
+                self.log_message(f"✗ git {tool_name} failed: {result.message}", "error")
                 if result.error:
                     self.log_message(result.error, "error")
 
         except Exception as e:
-            self.log_message(f"Error running {tool_name}: {e}", "error")
+            self.log_message(f"Error running git {tool_name}: {e}", "error")
 
-    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        """Handle option selection from the tools menu."""
-        option_id = event.option.id
-        if option_id:
-            self.run_worker(self.run_git_tool(option_id))
+    def _execute_git_tool(self, tool_name: str) -> None:
+        """Execute a git tool from the command palette."""
+        self.run_worker(self.run_git_tool(tool_name))
 
     def on_directory_tree_file_selected(self, event) -> None:
         """Handle file selection in the directory tree."""
         self.log_message(f"Selected: {event.path}", "info")
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle commit selection in the table."""
+        table = event.data_table
+        row_key = event.row_key
+        row_data = table.get_row(row_key)
+        commit_hash = row_data[2]  # Hash is in the 3rd column
+        self.log_message(f"Selected commit: {commit_hash}", "info")
 
 
 def run_app(repo_path: Optional[str] = None) -> None:
